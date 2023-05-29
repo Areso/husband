@@ -5,10 +5,17 @@ if (window.location.href.indexOf("file")===-1) {
   webserver = "http://localhost:8000";
   dev_flag  = true;
 }
+function checkIfValidUUID(str) {
+  // Regular expression to check if string is a valid UUID
+  const regexExp = /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/gi;
+  return regexExp.test(str);
+}
+
 var getLeaderboardTimer         = null;
 var getCountOfLiveHusbandsTimer = null;
 var getLiveprobeTimer           = null;
 var session                     = null;
+var getHusbandTimer             = null;
 function setUpBackendTimers(){
   getLeaderboardTimer         = setInterval(getLeaderboard, 30000);
   getCountOfLiveHusbandsTimer = setInterval(getCountOfLiveHusbands, 30000);
@@ -94,9 +101,13 @@ getLiveprobe();
 function newgameAnonym(){
   var xhttp = new XMLHttpRequest();
   xhttp.onreadystatechange = function() {
-    if (this.readyState === 4 && this.status === 200) {
+    if (this.readyState === 4 && this.status === 201) {
       resp_data = JSON.parse(this.responseText);
       session   = resp_data["hid"];
+      console.log(session);
+      if (checkIfValidUUID(session)) {
+        getHusbandTimer  = setInterval(getHusband, 3000);
+      }
     }
   };
   husband_name = document.getElementById("queryHusbandName").value;
@@ -117,4 +128,18 @@ function newgameAnonym(){
     console.log("full stop");
     $("#nameError").modal();
   }
+}
+
+function getHusband(){
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (this.readyState === 4 && this.status === 201) {
+      resp_data = JSON.parse(this.responseText);
+    }
+  };
+  payload      = JSON.stringify({"hid": session})
+  endpoint     = webserver + "/get_husband";
+  xhttp.open("POST", endpoint, true);
+  xhttp.setRequestHeader("Content-type", "application/json");
+  xhttp.send(payload);
 }
